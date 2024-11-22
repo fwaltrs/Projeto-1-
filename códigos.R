@@ -105,8 +105,8 @@ cox.stuart.test(diff(exportacoes_ts)) #1 diferença
 nsdiffs(exportacoes_ts) #0
 
 ## Verificar a estacionariedade da série
-adf.test(diff(exportacoes_ts))
-adfTest(exportacoes_ts)
+adf.test(diff(exportacoes_ts,4))
+adfTest(diff(exportacoes_ts,4))
 ur.df(diff(dados$Exportações),type="trend", lags=4)
 
 exportacoes_ts <- ts(dados$Exportações, frequency = 4, start = c(2002, 1))
