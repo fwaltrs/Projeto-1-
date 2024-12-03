@@ -110,7 +110,7 @@ adfTest(diff(exportacoes_ts,4))
 ur.df(diff(dados$Exportações),type="trend", lags=4)
 
 exportacoes_ts <- ts(dados$Exportações, frequency = 4, start = c(2002, 1))
-ggseasonplot(diff(exportacoes_ts), year.labels = FALSE, year.labels.left = FALSE) +
+ggseasonplot(diff(exportacoes_ts,4), year.labels = FALSE, year.labels.left = FALSE) +
   labs(title = "Seasonal plot",
        x = "Trimestres",
        y = "Preço (milhões de doláres)") +
@@ -243,79 +243,51 @@ predict(m,12)
 
 par(mfrow = c(1, 3)) 
 
-forecast1 = sarima.for(exportacoes_treino,24,1,1,1,1,0,0,4,
+forecast1 = sarima.for(exportacoes_ts,12,1,1,1,1,0,0,4,
                        newxreg=data.frame(AO=seq(exportacoes_treino) %in% c(41,13)), 
                        main = "Previsão com SARIMA(1,1,1,1,0,0,4)")
 
-forecast2 = sarima.for(exportacoes_treino,24,0,1,1,1,1,0,4,
+forecast2 = sarima.for(exportacoes_ts,12,0,1,1,1,1,0,4,
                        newxreg=data.frame(AO=seq(exportacoes_treino) %in% c(41,13)),
                        main = "Previsão com SARIMA(0,1,1,1,1,0,4)")
 
-forecast3 = sarima.for(exportacoes_treino,24,1,1,1,2,0,0,4,
+forecast3 = sarima.for(exportacoes_ts,12,1,1,1,2,0,0,4,
                        newxreg=data.frame(AO=seq(exportacoes_treino) %in% c(41,13)), 
                        main = "Previsão com SARIMA(1,1,1,2,0,0,4)")
 
-
-par(mfrow = c(1, 2)) 
-
-m1 <- HoltWinters(exportacoes_treino, seasonal = "multiplicative")
-plot(predict(m1,24),main="Previsões 2017 - 2022 - AES mult")
-m2 <- HoltWinters(exportacoes_treino, seasonal = "additive")
-plot(predict(m2,24),main="Previsões 2017 - 2022 - AES add")
-
-
-
-residuals <- residuals(m)
-residuals_st <- (residuals(m)-mean(residuals(m)))/(sqrt(residuals(m)))
-plot(residuals, main="Residuals of Holt-Winters Model")
-checkresiduals(m1,lag=13,plot=TRUE,test = "LB")
-accuracy(predict(fit_hw,teste),teste$Exportações)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-library(lmtest)
-med.var<-function(x,k)
-{N<-length(x)
-x.m<-rep(0,(N-k))
-x.r<-rep(0,(N-k))
-for (i in 1:(N-k)) x.m[i]<-mean(x[i:(i+k)])
-for (i in 1:(N-k)) x.r[i]<-max(x[i:(i+k)])-min(x[i:(i+k)])
-plot(x.m,x.r,xlab="médias",ylab="amplitude")
-aa1<-lm(x.r~x.m)
-abline(aa1$coef[1],aa1$coef[2],col=2)
-return(aa1)
-}
-
-aa1 = med.var(exportacoes_ts,4)
-
-bptest(aa1, 
-       varformula = NULL,
-       studentize = TRUE,
-       data = list(),
-       weights = NULL)
+m1 <- HoltWinters(exportacoes_ts, seasonal = "multiplicative")
+m2 <- HoltWinters(exportacoes_ts, seasonal = "additive")
+forecast_m1 <- forecast(m1, h = 12)
+forecast_m2 <- forecast(m2, h = 12)
+df_plot <- data.frame(
+  Periodo = c(time(exportacoes_ts), time(forecast_m1$mean), time(forecast_m2$mean)),
+  Exportacoes = c(as.numeric(exportacoes_ts), as.numeric(forecast_m1$mean), as.numeric(forecast_m2$mean)),
+  Tipo = c(
+    rep("Observado", length(exportacoes_ts)), 
+    rep("HW Multiplicativo", length(forecast_m1$mean)), 
+    rep("HW Aditivo", length(forecast_m2$mean))
+  )
+)
+ggplot(df_plot, aes(x = Periodo, y = Exportacoes, color = Tipo)) +
+  geom_line(size = 1) +
+  scale_color_manual(
+    values = c(
+      "Observado" = "black", 
+      "HW Multiplicativo" = "orange", 
+      "HW Aditivo" = "blue"
+    )
+  ) +
+  labs(
+    title = "Previsões dos Modelos Holt-Winters",
+    x = "Período",
+    y = "Preço (milhões de dólares)",
+    color = "Legenda"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    legend.position = "bottom"
+  )
 
 
 
